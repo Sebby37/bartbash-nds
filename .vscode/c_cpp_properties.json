@@ -1,0 +1,25 @@
+{
+    "configurations": [
+        {
+            "name": "BlocksDS",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/opt/wonderful/thirdparty/blocksds/core/libs/*/include/**",
+                "/opt/wonderful/thirdparty/blocksds/external/*/include/**"
+            ],
+            "defines": [
+                "ARM9"
+            ],
+            "compilerPath": "/opt/wonderful/toolchain/gcc-arm-none-eabi/bin/arm-none-eabi-gcc",
+            "cStandard": "c17",
+            "cppStandard": "gnu++17",
+            "intelliSenseMode": "linux-gcc-x64",
+            "mergeConfigurations": false,
+            "recursiveIncludes": {},
+            "browse": {
+                "limitSymbolsToIncludedHeaders": true
+            }
+        }
+    ],
+    "version": 4
+}
