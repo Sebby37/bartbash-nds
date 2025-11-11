@@ -38,6 +38,22 @@ typedef struct Boom {
     u8 maxFrames;
 } Boom;
 
+// Util: Returns a random float between min and max
+float randf_range(float min, float max) {
+    return min + ((float)rand() / (float)RAND_MAX) * (max - min);
+}
+
+// Util: Returns a random int between min and max
+int randi_range(int min, int max) {
+    return min + rand() % (max - min + 1);
+}
+
+// Util: Return whether a point resides within some rect
+inline bool point_in_rect(float px, float py, float rx, float ry, float rw, float rh) {
+    return (px >= rx && px <= rx+rw && py >= ry && py <= ry+rh);
+}
+
+// Loads a sprite and returns an Object struct reference to it
 Object* load_sprite(int screen, s32 w, s32 h, s32 id, s32 pal, s32 gfx) {
     Object *obj = (Object*)malloc(sizeof(Object)); // Yucky heap memory, but I feel like we need it here :(
 
@@ -60,24 +76,7 @@ Object* load_sprite(int screen, s32 w, s32 h, s32 id, s32 pal, s32 gfx) {
     return obj;
 }
 
-float randf_range(float min, float max) {
-    return min + ((float)rand() / (float)RAND_MAX) * (max - min);
-}
-
-int randi_range(int min, int max) {
-    return min + rand() % (max - min + 1);
-}
-
-void rand_bart_velocity(Vec2 *vec, u32 round) {
-    const float pi = 3.1415926535897932384626;
-
-    int speed = randi_range(100 + round * 30, 600 + round * 30) / 2; // Halve it because the original game runs at a 512x512 world
-    float angle = randf_range(0.261f, 1.309f) + randi_range(0, 3) * pi * 0.5;
-
-    vec->x = speed * cosf(angle);
-    vec->y = speed * sinf(angle);
-}
-
+// Basic update loop for an object, which in this case is just barts and having him bounce off edges
 void update_obj(Object *obj) {
     // Apply velocity
     obj->pos.x += obj->vel.x * dt;
@@ -93,14 +92,23 @@ void update_obj(Object *obj) {
     NF_MoveSprite(SCREEN_BOTTOM, obj->id, obj->pos.x, obj->pos.y);
 }
 
-inline bool point_in_rect(float px, float py, float rx, float ry, float rw, float rh) {
-    return (px >= rx && px <= rx+rw && py >= ry && py <= ry+rh);
+// Given the current round, give bart a random speed in a random direction
+// Logic straight from the actual game
+void rand_bart_velocity(Vec2 *vec, u32 round) {
+    const float pi = 3.1415926535897932384626;
+
+    int speed = randi_range(100 + round * 30, 600 + round * 30) / 2; // Halve it because the original game runs at a ~512x512 world
+    float angle = randf_range(0.261f, 1.309f) + randi_range(0, 3) * pi * 0.5;
+
+    vec->x = speed * cosf(angle);
+    vec->y = speed * sinf(angle);
 }
 
 // Global game vars!
-u64 score = 0;
+unsigned int score = 0;
 const int bart_pal = 0, bart_gfx = 0;
 const int boom_pal = 1, boom_gfx = 1;
+// The actual game itself!
 void bartbash(int round) {
     int num_barts = round < 13 ? round * 5 : 64; // Can't really be bigger than 64 because of my lazy solution for the explosions
     int barts_left = num_barts;
@@ -192,7 +200,7 @@ void bartbash(int round) {
         char top_str[32];
         NF_ClearTextLayer(SCREEN_TOP, 0); NF_ClearTextLayer16(SCREEN_TOP, 1);
         sprintf(top_str, "ROUND %d", round);            NF_WriteText(SCREEN_TOP,   0, 12, 5, top_str);
-        sprintf(top_str, "Score: %llu", score);         NF_WriteText(SCREEN_TOP,   0, 2, 8,  top_str);
+        sprintf(top_str, "Score: %u", score);           NF_WriteText(SCREEN_TOP,   0, 2, 8,  top_str);
         sprintf(top_str, "Barts Left: %d", barts_left); NF_WriteText(SCREEN_TOP,   0, 2, 10, top_str);
         sprintf(top_str, "%hhu", timer);                NF_WriteText16(SCREEN_TOP, 1, 15, 9, top_str); 
                                                         NF_WriteText16(SCREEN_TOP, 1, 24, 4, top_str);
@@ -339,17 +347,17 @@ int main(int argc, char **argv)
     swiWaitForVBlank();
     while (true) {
         scanKeys();
-        if (keysDown() & (~KEY_LID | KEY_DEBUG))
+        if (keysDown() & ~(KEY_LID | KEY_DEBUG))
             break;
         swiWaitForVBlank();
     }
 
     // Begin the game!
-    mus_play("nitro:/mus/bartbash.raw", 22050);
     NF_UnloadTiledBg("bartbash-ready");
     NF_LoadTiledBg("bg/bartbash", "bartbash", 256, 256);
     NF_CreateTiledBg(SCREEN_BOTTOM, 3, "bartbash");
     swiWaitForVBlank();
+    mus_play("nitro:/mus/bartbash.raw", 22050);
     for (int round = 1;;round++) bartbash(round); // Boy do I love funny for loops
 
     return 0;

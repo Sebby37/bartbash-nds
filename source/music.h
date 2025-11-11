@@ -11,6 +11,6 @@ extern int streamIn;
 extern int streamOut;
 
 void mus_init(void); // Inits the music system
-void mus_play(const char *file, mm_word rate); // Loads and begins playing a song
+void mus_play(const char *file, mm_word rate); // Loads and begins playing a song at some sample rate from nitrofs
 void mus_update(void); // Call each frame! Updates the music system
 void mus_stop(void); // Stops a running song
