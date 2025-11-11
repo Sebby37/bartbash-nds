@@ -6,6 +6,7 @@
         "stdio.h": "c",
         "math.h": "c",
         "time.h": "c",
-        "cstdlib": "c"
+        "cstdlib": "c",
+        "limits": "c"
     }
 }

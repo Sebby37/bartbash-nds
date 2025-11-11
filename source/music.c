@@ -1,5 +1,4 @@
 #include "music.h"
-#include <maxmod9.h>
 
 /*
   Heavily based off https://github.com/blocksds/sdk/blob/master/examples/maxmod/streaming/source/main.c
@@ -58,7 +57,7 @@ void mus_init(void) {
     song = NULL;
 }
 
-void mus_play(const char *file) {
+void mus_play(const char *file, mm_word rate) {
     if (mus_playing) mus_stop();
 
     song = fopen(file, "rb");
@@ -68,7 +67,7 @@ void mus_play(const char *file) {
     refillBuffer(true);
 
     mus_stream = (mm_stream){
-        .sampling_rate = 22050,
+        .sampling_rate = rate,
         .buffer_length = MUS_BUFFER_LENGTH,
         .callback      = streamingCallback,
         .format        = MM_STREAM_8BIT_MONO,
