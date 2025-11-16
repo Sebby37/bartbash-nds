@@ -15,6 +15,7 @@
 
 #define SCREEN_TOP 0
 #define SCREEN_BOTTOM 1
+#define MAX_BARTS 64  // Can't really be bigger than 64 because of my lazy solution for the explosions
 
 const float dt = 0.0167f; // Deltatime, fixed on the NDS which runs at 60fps
 
@@ -30,6 +31,7 @@ typedef struct Object {
     Vec2 pos;
     s32  w,h;
     Vec2 vel;
+    u8 frame;
 } Object;
 
 typedef struct Boom {
@@ -60,6 +62,7 @@ Object* load_sprite(int screen, s32 w, s32 h, s32 id, s32 pal, s32 gfx) {
     obj->screen = screen;
     obj->id = id;
     obj->enabled = true;
+    obj->frame = randi_range(0,6);
 
     obj->pos.x = 0;
     obj->pos.y = 0;
@@ -89,7 +92,9 @@ void update_obj(Object *obj) {
     if (obj->pos.y+obj->h > 192)  { obj->pos.y = 192-obj->h;  obj->vel.y *= -1; }
 
     // Draw in real life!
+    NF_SpriteFrame(SCREEN_BOTTOM, obj->id, (obj->frame++)>>3);
     NF_MoveSprite(SCREEN_BOTTOM, obj->id, obj->pos.x, obj->pos.y);
+    if ((obj->frame>>3) >= 6) obj->frame = 0;
 }
 
 // Given the current round, give bart a random speed in a random direction
@@ -108,15 +113,16 @@ void rand_bart_velocity(Vec2 *vec, u32 round) {
 unsigned int score = 0;
 const int bart_pal = 0, bart_gfx = 0;
 const int boom_pal = 1, boom_gfx = 1;
+const int wreath_pal = 2, wreath_gfx = 2;
 // The actual game itself!
 void bartbash(int round) {
-    int num_barts = round < 13 ? round * 5 : 64; // Can't really be bigger than 64 because of my lazy solution for the explosions
+    int num_barts = round < 13 ? round * 5 : MAX_BARTS;
     int barts_left = num_barts;
     
     // Create barts!
     Object *barts[num_barts];
     for (int i = 0; i < num_barts; i++) {
-        Object *bart = load_sprite(SCREEN_BOTTOM, 16, 32, i, bart_pal, bart_gfx);
+        Object *bart = load_sprite(SCREEN_BOTTOM, 32, 32, i, bart_pal, bart_gfx);
         bart->pos.x = randf_range(0, 256-bart->w);
         bart->pos.y = randf_range(0, 192-bart->h);
         rand_bart_velocity(&bart->vel, round);
@@ -161,9 +167,9 @@ void bartbash(int round) {
                 // Did the bart be clicked?
                 if (just_tapped && point_in_rect(touch.px, touch.py, bart->pos.x, bart->pos.y, bart->w, bart->h)) {
                     bart->enabled = false;
-                    mmEffect(SFX_OW);
+                    mmEffect(SFX_HOHOHO);
                     if (--barts_left <= 0)
-                        mmEffect(SFX_CONGRATS);
+                        mmEffect(SFX_MERRYCHRISTMAS);
                     score += 50;
                 }
             } else if (bart != NULL && !bart->enabled) {
@@ -199,11 +205,10 @@ void bartbash(int round) {
         // Update text layers
         char top_str[32];
         NF_ClearTextLayer(SCREEN_TOP, 0); NF_ClearTextLayer16(SCREEN_TOP, 1);
-        sprintf(top_str, "ROUND %d", round);            NF_WriteText(SCREEN_TOP,   0, 12, 5, top_str);
-        sprintf(top_str, "Score: %u", score);           NF_WriteText(SCREEN_TOP,   0, 2, 8,  top_str);
-        sprintf(top_str, "Barts Left: %d", barts_left); NF_WriteText(SCREEN_TOP,   0, 2, 10, top_str);
-        sprintf(top_str, "%hhu", timer);                NF_WriteText16(SCREEN_TOP, 1, 15, 9, top_str); 
-                                                        NF_WriteText16(SCREEN_TOP, 1, 24, 4, top_str);
+        sprintf(top_str, "ROUND %d", round);            NF_WriteText(SCREEN_TOP,   0, 12, 9, top_str);
+        sprintf(top_str, "Score: %u", score);           NF_WriteText(SCREEN_TOP,   0, 2, 14, top_str);
+        sprintf(top_str, "SNOWMEN Left: %d", barts_left); NF_WriteText(SCREEN_TOP,   0, 2, 16, top_str);
+        sprintf(top_str, "%hhu", timer);                NF_WriteText16(SCREEN_TOP, 1, 26, 4, top_str); 
         NF_UpdateTextLayers();
 
         // Update sprite stuff
@@ -241,8 +246,8 @@ void bartbash(int round) {
         NF_UpdateTextLayers();
         NF_ClearTextLayer(SCREEN_TOP, 0); NF_ClearTextLayer16(SCREEN_TOP, 1); NF_UpdateTextLayers();
         NF_CreateTextLayer(SCREEN_BOTTOM, 2, 0, "comic");
-        NF_WriteText(SCREEN_BOTTOM, 2, 2, 9, "GAME OVER");
-        NF_WriteText(SCREEN_BOTTOM, 2, 2, 11, "\"Eat my shorts!\"");
+        NF_WriteText(SCREEN_BOTTOM, 2, 2, 9, "JOLLY OVER");
+        NF_WriteText(SCREEN_BOTTOM, 2, 2, 11, "\"Coal in your stocking!\"");
         NF_UpdateTextLayers();
 
         // Remove the barts
@@ -279,8 +284,8 @@ int main(int argc, char **argv)
     { // Maxmod (sound) inits
         mus_init();
         mmInitDefault("maxmod/soundbank.bin");
-        mmLoadEffect(SFX_CONGRATS);
-        mmLoadEffect(SFX_OW);
+        mmLoadEffect(SFX_MERRYCHRISTMAS);
+        mmLoadEffect(SFX_HOHOHO);
     }
 
     // Initialize 2D engine in both screens and use mode 0
@@ -294,12 +299,12 @@ int main(int argc, char **argv)
         NF_InitTiledBgSys(SCREEN_BOTTOM);       // Bottom screen
 
         // Load background files from NitroFS
-        NF_LoadTiledBg("bg/bartbash-ready", "bartbash-ready", 256, 256);
-        NF_LoadTiledBg("bg/barttop", "barttop", 256, 256);
+        NF_LoadTiledBg("bg/background-ready", "background-ready", 256, 256);
+        NF_LoadTiledBg("bg/warmwish", "warmwish", 256, 256);
 
         // Create backgrounds
-        NF_CreateTiledBg(SCREEN_TOP, 3, "barttop");
-        NF_CreateTiledBg(SCREEN_BOTTOM, 3, "bartbash-ready");
+        NF_CreateTiledBg(SCREEN_TOP, 3, "warmwish");
+        NF_CreateTiledBg(SCREEN_BOTTOM, 3, "background-ready");
     }
 
     { // Setup sprites
@@ -308,7 +313,7 @@ int main(int argc, char **argv)
     }
     
     { // Load bart gfx/sprites
-        const char *path = "spr/bart";
+        const char *path = "spr/snowman";
 
         // Load bart palette
         NF_LoadSpritePal(path, bart_pal);
@@ -316,13 +321,13 @@ int main(int argc, char **argv)
         NF_UnloadSpritePal(bart_pal);
 
         // Load bart sprite
-        NF_LoadSpriteGfx(path, bart_gfx, 16, 32);
+        NF_LoadSpriteGfx(path, bart_gfx, 32, 32);
         NF_VramSpriteGfx(SCREEN_BOTTOM, bart_gfx, bart_gfx, false);
         NF_UnloadSpriteGfx(bart_gfx);
     }
 
     { // Load the boom gfx/sprites
-        const char *boom_path = "spr/boom_half";
+        const char *boom_path = "spr/snowboom";
 
         NF_LoadSpritePal(boom_path, boom_pal);
         NF_VramSpritePal(SCREEN_BOTTOM, boom_pal, boom_pal);
@@ -353,11 +358,11 @@ int main(int argc, char **argv)
     }
 
     // Begin the game!
-    NF_UnloadTiledBg("bartbash-ready");
-    NF_LoadTiledBg("bg/bartbash", "bartbash", 256, 256);
-    NF_CreateTiledBg(SCREEN_BOTTOM, 3, "bartbash");
+    NF_UnloadTiledBg("background-ready");
+    NF_LoadTiledBg("bg/background", "background", 256, 256);
+    NF_CreateTiledBg(SCREEN_BOTTOM, 3, "background");
     swiWaitForVBlank();
-    mus_play("nitro:/mus/bartbash.raw", 22050);
+    mus_play("nitro:/mus/pacxmas.raw", 22050);
     for (int round = 1;;round++) bartbash(round); // Boy do I love funny for loops
 
     return 0;
