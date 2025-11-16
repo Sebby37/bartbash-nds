@@ -23,7 +23,7 @@ nds = NdsRom(
     game_title='Bart Bash!',
     game_subtitle="Uncanny!",
     game_author="By SebC (demake'd SH2K)",
-    game_icon="assets/canny.bmp"
+    game_icon="assets/jolly.bmp"
 )
 nds.generate_nds()
 
