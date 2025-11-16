@@ -20,8 +20,8 @@ arm9.generate_elf()
 
 nds = NdsRom(
     binaries=[arm9, nitrofs],
-    game_title='Bart Bash!',
-    game_subtitle="Uncanny!",
+    game_title='Jolly Jab!',
+    game_subtitle="Merry Christmas!",
     game_author="By SebC (demake'd SH2K)",
     game_icon="assets/jolly.bmp"
 )
